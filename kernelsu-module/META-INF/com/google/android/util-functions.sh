@@ -112,16 +112,85 @@ extract_rootfs(){
 
 apply_nh_wallpaper(){
     echo "- Applying NetHunter wallpaper..."
-    unzip -oq "${ZIPFILE}" 'wallpaper/wallpaper.png' -d "${TMPDIR}" >&2
 
-    [ ! -f "${TMPDIR}/wallpaper/wallpaper.png" ] && echo "- Nethunter Wallpaper not found. Skipping..." && return 0
+    # Extract wallpaper and ImageMagick binaries
+    unzip -oq "${ZIPFILE}" "wallpaper/*" -d "${TMPDIR}" >&2
+    [ ! -f "${TMPDIR}/wallpaper/wallpaper.png" ] && echo "- NetHunter wallpaper not found. Skipping..." && return 0
 
-    cat "${TMPDIR}/wallpaper/wallpaper.png" > /data/system/users/0/wallpaper &>/dev/null && \
-    echo '<?xml version="1.0" encoding="utf-8" standalone="yes" ?><wp width="1080" height="1920" name="wallpaper.png" />' > /data/system/users/0/wallpaper_info.xml
-    chown system:system /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml && \
-        chmod 0600 /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml && \
-        chcon "u:object_r:wallpaper_file:s0" /data/system/users/0/wallpaper 2>/dev/null && \
-        chcon "u:object_r:system_data_file:s0" /data/system/users/0/wallpaper_info.xml 2>/dev/null
+    # Check if ImageMagick is available
+    if [ ! -x "${TMPDIR}/wallpaper/${ARCH}/magick" ]; then
+        echo "- ImageMagick not found. Skipping wallpaper..."
+        return 0
+    fi
+
+    # Check if wm command has devpts issues (exit code 2 = broken)
+    wm &>/dev/null
+    if [ $? -eq 2 ]; then
+        echo "- wm command looks broken. Is devpts hooks properly wired up in your KernelSU kernel? Skipping..."
+        return 0
+    fi
+
+    # Get resolution as WIDTHxHEIGHT
+    local res=$(wm size 2>/dev/null | grep "Physical size:" | cut -d' ' -f3)
+
+    if [ -z "$res" ]; then
+        echo "- Failed to detect display resolution. Skipping..."
+        return 0
+    fi
+
+    # Parse width and height
+    local width=$(echo "$res" | cut -d'x' -f1)
+    local height=$(echo "$res" | cut -d'x' -f2)
+
+    # Validate resolution
+    if [ -z "$width" ] || [ -z "$height" ]; then
+        echo "- Invalid resolution detected. Skipping..."
+        return 0
+    fi
+
+    echo "- Detected resolution: ${width}x${height}"
+
+    # Detect tablets by aspect ratio (tablets are typically < 1.7:1)
+    # Calculate aspect ratio: height/width * 100 (to avoid floating point)
+    local aspect_ratio=$((height * 100 / width))
+
+    # If aspect ratio < 1.7 (i.e., 170), it's likely a tablet
+    # Phones are typically 16:9 (1.78), 18:9 (2.0), 19.5:9 (2.17), etc.
+    # Tablets are typically 4:3 (1.33) or 16:10 (1.6)
+    if [ $aspect_ratio -lt 170 ]; then
+        echo "- Tablet detected. Skipping wallpaper to avoid stretching..."
+        return 0
+    fi
+
+    # Set up ImageMagick with library path
+    chmod 755 -R "${TMPDIR}/wallpaper/${ARCH}"
+    export LD_LIBRARY_PATH="${TMPDIR}/wallpaper/${ARCH}:${LD_LIBRARY_PATH}"
+    local MAGICK="${TMPDIR}/wallpaper/${ARCH}/magick"
+
+    # Resize wallpaper to match screen resolution
+    echo "- Resizing wallpaper to ${width}x${height}..."
+    if ! ${MAGICK} convert "${TMPDIR}/wallpaper/wallpaper.png" -resize "${width}x${height}^" -gravity center -extent "${width}x${height}" "${TMPDIR}/wallpaper/resized.png" 2>/dev/null; then
+        echo "- Failed to resize wallpaper. Using original..."
+        cp "${TMPDIR}/wallpaper/wallpaper.png" "${TMPDIR}/wallpaper/resized.png"
+    fi
+
+    # Apply wallpaper
+    echo "- Setting wallpaper..."
+    cat "${TMPDIR}/wallpaper/resized.png" > /data/system/users/0/wallpaper 2>/dev/null || {
+        echo "- Failed to set wallpaper"
+        return 0
+    }
+
+    # Create wallpaper info XML with detected resolution
+    echo "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\" ?><wp width=\"${width}\" height=\"${height}\" name=\"wallpaper.png\" />" > /data/system/users/0/wallpaper_info.xml
+
+    # Set permissions and SELinux contexts
+    chown system:system /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml 2>/dev/null
+    chmod 0600 /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml 2>/dev/null
+    chcon "u:object_r:wallpaper_file:s0" /data/system/users/0/wallpaper 2>/dev/null
+    chcon "u:object_r:system_data_file:s0" /data/system/users/0/wallpaper_info.xml 2>/dev/null
+
+    echo "- Wallpaper applied successfully!"
     return 0
 }
 
