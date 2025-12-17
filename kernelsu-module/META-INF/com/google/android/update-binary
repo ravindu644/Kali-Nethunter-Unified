@@ -18,7 +18,7 @@ error() { echo "[-] error: $1" && exit 1; }
 
 # immediately extract the core files if exists
 for file in common/system.prop module.prop common/service.sh common/post-fs-data.sh; do
-    unzip -p "$ZIPFILE" "$file" &>/dev/null && unzip -oq "$ZIPFILE" "$file" -d "$MODPATH" || error "Failed to extract $file"
+    unzip -p "$ZIPFILE" "$file" &>/dev/null && unzip -oj "$ZIPFILE" "$file" -d "$MODPATH" || error "Failed to extract $file"
 done
 
 # crucial check to see if module.prop exists
@@ -42,5 +42,5 @@ print_module_info(){
 }
 
 set_permissions(){
-  :
+    :
 }

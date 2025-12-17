@@ -115,3 +115,85 @@ apply_nh_wallpaper(){
         chcon "u:object_r:system_data_file:s0" /data/system/users/0/wallpaper_info.xml 2>/dev/null
     return 0
 }
+
+install_nh_apps(){
+    echo "- Installing NetHunter apps..."
+    unzip -oq "${ZIPFILE}" 'APKs/*' -d "${TMPDIR}" >&2
+
+    if [ ! -d "${TMPDIR}/APKs" ] || [ -z "$(ls -A "${TMPDIR}/APKs" 2>/dev/null)" ]; then
+        echo "- No NetHunter apps found. Skipping..."
+        return 0
+    fi
+
+    if ! pm &>/dev/null; then
+        echo "- pm command looks broken. Is devpts hooks properly wired up in your KernelSU kernel? Skipping..."
+        return 0
+    fi
+
+    # remove previous installations
+    pm uninstall com.offsec.nethunter &>/dev/null || true
+    pm uninstall com.offsec.nethunter.kex &>/dev/null || true
+    pm uninstall com.offsec.nhterm &>/dev/null || true
+    pm uninstall com.offsec.nethunter.store &>/dev/null || true
+
+    for apk in "${TMPDIR}/APKs"/*.apk; do
+        echo "- Installing $(basename "$apk")..."
+        if ! pm install -r "$apk"; then
+            echo "  Failed to install $(basename "$apk")"
+        fi
+    done
+
+    echo "- Granting permissions to NetHunter apps..."
+    for x in ACCESS_BACKGROUND_LOCATION \
+            ACCESS_COARSE_LOCATION \
+            ACCESS_FINE_LOCATION \
+            READ_EXTERNAL_STORAGE \
+            WRITE_EXTERNAL_STORAGE \
+            WRITE_SECURE_SETTINGS; do
+    pm grant -g com.offsec.nethunter android.permission.$x &>/dev/null || true
+    done
+
+    return 0
+}
+
+final_touches(){
+# this function has everything directly copied from the official installer
+
+# Remove Osmosis BusyBox module
+[ -d /data/adb/modules/busybox-ndk ] && {
+  touch /data/adb/modules/busybox-ndk/disable
+  touch /data/adb/modules/busybox-ndk/remove
+}
+
+# Remove Wi-Fi firmware modules
+[ -d /data/adb/modules/wirelessFirmware ] && {
+  touch /data/adb/modules/wirelessFirmware/disable
+  touch /data/adb/modules/wirelessFirmware/remove
+}
+
+# Remove nano modules
+[ -d /data/adb/modules/nano-ndk ] && {
+  touch /data/adb/modules/nano-ndk/disable
+  touch /data/adb/modules/nano-ndk/remove
+}
+
+# symlink kali scripts
+mkdir -p "${MODPATH}/system/bin"
+for link in bootkali bootkali_init bootkali_login bootkali_bash killkali; do
+    ln -sf /data/data/com.offsec.nethunter/assets/scripts/${link} "${MODPATH}/system/bin/${link}" || true
+done
+
+# remove junk files and directories
+for junk in ".git*" "placeholder" "README.md" "LICENSE"; do
+    find "${MODPATH}" -name "${junk}" -delete || true
+done
+
+return 0
+}
+
+set_nh_permissions(){
+    chown -R root:root "${MODPATH}/system" 2>/dev/null
+    chmod -R 0755 "${MODPATH}/system" 2>/dev/null
+    chcon -R u:object_r:system_file:s0 "${MODPATH}/system" 2>/dev/null
+    return 0
+}
