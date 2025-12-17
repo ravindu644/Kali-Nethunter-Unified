@@ -4,7 +4,7 @@
 # KernelSU Module Installer Script
 
 # source our functions
-unzip -o "$ZIPFILE" 'META-INF/*' -d "$TMPDIR" >&2
+unzip -qo "$ZIPFILE" 'META-INF/*' -d "$TMPDIR" 2>/dev/null
 . "$TMPDIR/META-INF/com/google/android/update-binary"
 . "$TMPDIR/META-INF/com/google/android/util-functions.sh"
 

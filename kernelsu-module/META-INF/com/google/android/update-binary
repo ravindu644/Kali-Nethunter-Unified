@@ -44,7 +44,7 @@ detect_root() {
 
 # immediately extract the core files if exists
 for file in common/system.prop module.prop common/service.sh common/post-fs-data.sh; do
-    unzip -p "$ZIPFILE" "$file" &>/dev/null && unzip -oj "$ZIPFILE" "$file" -d "$MODPATH" || error "Failed to extract $file"
+    unzip -qp "$ZIPFILE" "$file" &>/dev/null && unzip -qoj "$ZIPFILE" "$file" -d "$MODPATH" 2>/dev/null || error "Failed to extract $file"
 done
 
 # crucial check to see if module.prop exists

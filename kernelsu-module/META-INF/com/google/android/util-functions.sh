@@ -19,7 +19,6 @@ detect_arch(){
         *) error "Unsupported architecture: ${arch}"
             ;;
     esac
-    log "Detected architecture: ${ARCH}"
 } && detect_arch
 
 install_busybox(){
@@ -35,7 +34,7 @@ install_busybox(){
         return 0
     fi
 
-    unzip -o "$ZIPFILE" 'busybox/*' -d "${TMPDIR}" >&2
+    unzip -qo "$ZIPFILE" 'busybox/*' -d "${TMPDIR}" 2>/dev/null
 
     [ ! -d "${TMPDIR}/busybox" ] && error "Failed to extract busybox. Cannot continue..!"
 
@@ -52,7 +51,7 @@ install_busybox(){
 
 install_core(){
     echo "- Installing core files..."
-    unzip -o "$ZIPFILE" 'system/*' -d "${MODPATH}" >&2
+    unzip -qo "$ZIPFILE" 'system/*' -d "${MODPATH}" 2>/dev/null
 }
 
 check_data_space(){
@@ -103,7 +102,7 @@ extract_rootfs(){
     local TAR_CMD="${BUSYBOX} tar"
     command -v tar &>/dev/null && TAR_CMD="tar"
 
-    if unzip -oq "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" && ${TAR_CMD} -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+    if unzip -qo "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" 2>/dev/null && ${TAR_CMD} -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
         ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
         echo "- Kali rootfs installed successfully"
     else
@@ -117,7 +116,7 @@ install_wireless_firmwares(){
     if unzip -l "$ZIPFILE" 2>/dev/null | grep -q "vendor/firmware/"; then
         echo "- Installing wireless firmware..."
         mkdir -p "${MODPATH}/system"
-        unzip -oq "$ZIPFILE" "vendor/firmware/*" -d "${MODPATH}/system" >&2
+        unzip -qo "$ZIPFILE" "vendor/firmware/*" -d "${MODPATH}/system" 2>/dev/null
         return 0
     fi
 
@@ -129,7 +128,7 @@ apply_nh_wallpaper(){
     echo "- Applying NetHunter wallpaper..."
 
     # Extract wallpaper and ImageMagick binaries
-    unzip -oq "${ZIPFILE}" "wallpaper/*" -d "${TMPDIR}" >&2
+    unzip -qo "${ZIPFILE}" "wallpaper/*" -d "${TMPDIR}" 2>/dev/null
     [ ! -f "${TMPDIR}/wallpaper/wallpaper.png" ] && echo "- NetHunter wallpaper not found. Skipping..." && return 0
 
     # Check if ImageMagick is available
@@ -211,7 +210,7 @@ apply_nh_wallpaper(){
 
 install_nh_apps(){
     echo "- Installing NetHunter apps..."
-    unzip -oq "${ZIPFILE}" 'APKs/*' -d "${TMPDIR}" >&2
+    unzip -qo "${ZIPFILE}" 'APKs/*' -d "${TMPDIR}" 2>/dev/null
 
     # Ensure APK directory exists and contains at least one .apk file
     if [ ! -d "${TMPDIR}/APKs" ] || ! ls "${TMPDIR}/APKs"/*.apk >/dev/null 2>&1; then
