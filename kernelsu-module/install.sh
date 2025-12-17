@@ -27,6 +27,7 @@ print_module_info
 
 on_install(){
     echo "- Starting module installation..."
+    detect_root
     install_busybox
     install_core
     check_data_space && extract_rootfs
