@@ -198,12 +198,15 @@ install_nh_apps(){
     echo "- Installing NetHunter apps..."
     unzip -oq "${ZIPFILE}" 'APKs/*' -d "${TMPDIR}" >&2
 
-    if [ ! -d "${TMPDIR}/APKs" ] || [ -z "$(ls -A "${TMPDIR}/APKs" 2>/dev/null)" ]; then
-        echo "- No NetHunter apps found. Skipping..."
+    # Ensure APK directory exists and contains at least one .apk file
+    if [ ! -d "${TMPDIR}/APKs" ] || ! ls "${TMPDIR}/APKs"/*.apk >/dev/null 2>&1; then
+        echo "- No NetHunter APK files found. Skipping..."
         return 0
     fi
 
-    if ! pm &>/dev/null; then
+    # Check if pm command has devpts issues (exit code 2 = broken)
+    pm &>/dev/null
+    if [ $? -eq 2 ]; then
         echo "- pm command looks broken. Is devpts hooks properly wired up in your KernelSU kernel? Skipping..."
         return 0
     fi

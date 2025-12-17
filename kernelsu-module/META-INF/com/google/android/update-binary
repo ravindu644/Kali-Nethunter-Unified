@@ -19,7 +19,6 @@ error() { echo "[-] error: $1" && exit 1; }
 
 # Detect root method
 detect_root() {
-    echo ""
     if command -v magisk >/dev/null 2>&1; then
         ROOT_METHOD="magisk"
         echo -e "- Magisk detected\n"
