@@ -55,7 +55,7 @@ install_core(){
 }
 
 check_data_space(){
-    local required_gb=10 free_gb avail_blocks block_size free_kb
+    local required_gb=${required_gb:-10} free_gb avail_blocks block_size free_kb
 
     if command -v stat >/dev/null 2>&1; then
         avail_blocks=$(stat -f -c '%a' /data 2>/dev/null)

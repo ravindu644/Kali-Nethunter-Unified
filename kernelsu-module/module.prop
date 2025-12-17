@@ -4,3 +4,4 @@ version=1.4.0
 versionCode=14000
 author=Kali NetHunter Team @ GitLab, ravindu644
 description=Kali NetHunter's apps, chroot, firmwares, wallpaper & kernel
+required_gb=10

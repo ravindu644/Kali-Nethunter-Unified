@@ -8,6 +8,7 @@ DOWNLOAD_LINK="$1"
 WORKSPACE="${SCRIPT_DIR}/workspace"
 MODULE_SRC="${SCRIPT_DIR}/kernelsu-module"
 MODULE_TMP="${SCRIPT_DIR}/kernelsu-module.tmp"
+REQUIRED_GB_DEFAULT=10
 
 # Core functions
 cd "${SCRIPT_DIR}"
@@ -70,6 +71,19 @@ collect_info(){
     fi
     log "Found Kali rootfs: $rootfs"
     export ROOTFS_FILE="${WORKSPACE}/${rootfs}"
+
+    # Detect edition (full/minimal/nano) from rootfs filename and set default required space
+    local fs_size
+    fs_size=$(basename "$rootfs" | awk -F[-.] '{print $2}')
+    case "$fs_size" in
+        minimal|nano)
+            REQUIRED_GB_DEFAULT=4
+            ;;
+        *)
+            REQUIRED_GB_DEFAULT=10
+            ;;
+    esac
+    log "Using required space: ${REQUIRED_GB_DEFAULT}GB"
 
     # Read version info from original module.prop if present
     if [ -f "${WORKSPACE}/module.prop" ]; then
@@ -157,6 +171,26 @@ cleanup_module_junk(){
     return 0
 }
 
+update_required_space(){
+    local MP="${MODULE_TMP}/module.prop"
+
+    [ -f "${MP}" ] || {
+        log "module.prop not found in temporary module; skipping required_gb update"
+        return 0
+    }
+
+    [ -z "${REQUIRED_GB_DEFAULT}" ] && return 0
+
+    if grep -q '^required_gb=' "${MP}"; then
+        sed -i "s/^required_gb=.*/required_gb=${REQUIRED_GB_DEFAULT}/" "${MP}"
+    else
+        echo "required_gb=${REQUIRED_GB_DEFAULT}" >> "${MP}"
+    fi
+
+    log "Set required_gb=${REQUIRED_GB_DEFAULT} in module.prop"
+    return 0
+}
+
 update_module_prop_version(){
     local MP="${MODULE_TMP}/module.prop"
 
@@ -209,5 +243,6 @@ apply_rootfs_to_module
 copy_apks_to_module
 sync_system_overlay
 cleanup_module_junk
+update_required_space
 update_module_prop_version
 build_unified_zip
