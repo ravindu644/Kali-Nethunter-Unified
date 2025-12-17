@@ -30,4 +30,5 @@ on_install(){
     install_busybox
     install_core
     extract_rootfs
+    apply_nh_wallpaper || echo "- Failed to apply NetHunter wallpaper..."
 }

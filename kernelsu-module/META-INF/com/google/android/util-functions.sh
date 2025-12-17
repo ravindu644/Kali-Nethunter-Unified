@@ -72,13 +72,27 @@ extract_rootfs(){
     mkdir -p "${NHSYS}/kali-${ARCH}"
 
     echo " - Extracting Kali rootfs (This may take up to 25 minutes)"
-    if ${BUSYBOX} tar -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+
+    if unzip -oq "$ZIPFILE" "${rootfs_file}" -d "$TMPDIR" && ${BUSYBOX} tar -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+        ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
         echo "- Kali rootfs installed successfully"
     else
-        echo "- Failed to install Kali rootfs"
-        return 1
+        echo "- Failed to install Kali rootfs. Skipping..."
+        return 0
     fi
+}
 
-    ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
+apply_nh_wallpaper(){
+    echo "- Applying NetHunter wallpaper..."
+    unzip -oq "$ZIPFILE" 'wallpaper/wallpaper.png' -d "$TMPDIR" >&2
+
+    [ ! -f "${TMPDIR}/wallpaper/wallpaper.png" ] && echo "- Nethunter Wallpaper not found. Skipping..." && return 0
+
+    cat "${TMPDIR}/wallpaper/wallpaper.png" > /data/system/users/0/wallpaper &>/dev/null && \
+    echo '<?xml version="1.0" encoding="utf-8" standalone="yes" ?><wp width="1080" height="1920" name="wallpaper.png" />' > /data/system/users/0/wallpaper_info.xml
+    chown system:system /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml && \
+        chmod 0600 /data/system/users/0/wallpaper /data/system/users/0/wallpaper_info.xml && \
+        chcon "u:object_r:wallpaper_file:s0" /data/system/users/0/wallpaper 2>/dev/null && \
+        chcon "u:object_r:system_data_file:s0" /data/system/users/0/wallpaper_info.xml 2>/dev/null
     return 0
 }
