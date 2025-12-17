@@ -59,23 +59,20 @@ jobs:
             exit 1
           fi
 
-          NEW_ZIP="nethunter-${{ matrix.edition }}-unified.zip"
-          mv "${OUT_ZIP}" "${NEW_ZIP}"
+          echo "[INFO] Generated file: ${OUT_ZIP}"
 
-          # Check file size and split if larger than 1.8GB
-          FILE_SIZE=$(stat -f%z "${NEW_ZIP}" 2>/dev/null || stat -c%s "${NEW_ZIP}" 2>/dev/null || echo "0")
+          # Check file size and split if larger than 1.8GB (keep original name)
+          FILE_SIZE=$(stat -f%z "${OUT_ZIP}" 2>/dev/null || stat -c%s "${OUT_ZIP}" 2>/dev/null || echo "0")
           MAX_SIZE=$((1800000000))  # 1.8GB in bytes
 
           if [ "${FILE_SIZE}" -gt "${MAX_SIZE}" ]; then
             echo "[INFO] File size (${FILE_SIZE} bytes) exceeds 1.8GB, splitting into parts..."
-            SPLIT_BASE="nethunter-${{ matrix.edition }}-unified-split.zip"
-            zip -s 1800M "${SPLIT_BASE}" "${NEW_ZIP}" && rm "${NEW_ZIP}"
-            echo "ZIP_SPLIT=true" >> "${GITHUB_ENV}"
-            echo "ZIP_PATTERN=nethunter-${{ matrix.edition }}-unified-split.z*" >> "${GITHUB_ENV}"
-            echo "[INFO] Split zip parts created: ${SPLIT_BASE} and ${SPLIT_BASE%.zip}.z*"
+            # Create split base name by replacing -unified.zip with -unified-split.zip
+            SPLIT_BASE="${OUT_ZIP%-unified.zip}-unified-split.zip"
+            zip -s 1800M "${SPLIT_BASE}" "${OUT_ZIP}" && rm "${OUT_ZIP}"
+            echo "[INFO] Split zip parts created: ${SPLIT_BASE} and split parts"
+            ls -lh *-unified-split.z* 2>/dev/null || true
           else
-            echo "ZIP_SPLIT=false" >> "${GITHUB_ENV}"
-            echo "ZIP_NAME=${NEW_ZIP}" >> "${GITHUB_ENV}"
             echo "[INFO] File size (${FILE_SIZE} bytes) is within limits, no splitting needed"
           fi
 
@@ -84,9 +81,9 @@ jobs:
         with:
           name: nethunter-${{ matrix.edition }}-unified
           path: |
-            nethunter-${{ matrix.edition }}-unified.zip
-            nethunter-${{ matrix.edition }}-unified-split.zip
-            nethunter-${{ matrix.edition }}-unified-split.z*
+            *-unified.zip
+            *-unified-split.zip
+            *-unified-split.z*
           if-no-files-found: ignore
 
   release:
@@ -122,7 +119,10 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/**/*unified*.zip*"
+          artifacts: |
+            artifacts/**/*-unified.zip
+            artifacts/**/*-unified-split.zip
+            artifacts/**/*-unified-split.z*
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TAG_NAME }}
@@ -134,6 +134,10 @@ jobs:
             - Minimal generic build
             - Full generic build
 
-            **Note:** Large files (>1.8GB) are split into multiple parts. Download all `*-split.zip` and `*-split.z*` files and extract them using 7zip.
+            **Note:** Large files (>1.8GB) are split into multiple parts. Download all `.zip` and `.z*` files with the same base name and join them using:
+            ```bash
+            zip -F *-unified-split.zip --out *-unified.zip
+            unzip *-unified.zip
+            ```
 
             Date: ${{ env.DATE_STR }}
