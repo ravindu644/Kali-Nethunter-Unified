@@ -222,10 +222,20 @@ update_module_prop_version(){
 
 build_unified_zip(){
     cd "${MODULE_TMP}" || error "Failed to cd into ${MODULE_TMP}"
-    local OUT_ZIP="${SCRIPT_DIR}/${FILENAME}-unified.zip"
+    # Remove .zip extension from original filename before adding -unified.zip
+    local BASE_NAME="${FILENAME%.zip}"
+    local OUT_ZIP="${SCRIPT_DIR}/${BASE_NAME}-unified.zip"
     log "Creating unified zip: ${OUT_ZIP}"
     zip -r "${OUT_ZIP}" . >/dev/null || error "Failed to create unified zip"
     log "Unified zip created at: ${OUT_ZIP}"
+    return 0
+}
+
+cleanup_temp_dirs(){
+    log "Cleaning up temporary directories..."
+    rm -rf "${WORKSPACE}" 2>/dev/null || true
+    rm -rf "${MODULE_TMP}" 2>/dev/null || true
+    log "Cleanup complete"
     return 0
 }
 
@@ -246,3 +256,4 @@ cleanup_module_junk
 update_required_space
 update_module_prop_version
 build_unified_zip
+cleanup_temp_dirs
