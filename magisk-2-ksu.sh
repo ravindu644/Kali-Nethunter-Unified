@@ -31,7 +31,6 @@ check_requirements(){
             error "$dep could not be found"
         fi
     done
-    log "All dependencies found"
 } && check_requirements
 
 # fetch the NetHunter zip (supports URL or local file)
