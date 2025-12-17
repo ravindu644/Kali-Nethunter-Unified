@@ -266,9 +266,9 @@ install_nh_apps(){
     pm grant com.offsec.nethunter android.permission.$x &>/dev/null || true
     done
 
-    return 0
-
     echo -e "\n- Note: You may need to grant root permissions to NetHunter apps manually after reboot.\n"
+
+    return 0
 
 }
 
