@@ -14,7 +14,7 @@ detect_arch(){
             export ARCH=arm64
             ;;
         armeabi*)
-            export ARCH=arm
+            export ARCH=armhf
             ;;
         *) error "Unsupported architecture: ${arch}"
             ;;
@@ -94,15 +94,32 @@ extract_rootfs(){
         echo "- Found Kali rootfs to be installed: ${rootfs_file}"
     fi
 
-    mkdir -p "${NHSYS}/kali-${ARCH}"
-
     echo " - Extracting Kali rootfs (This may take up to 25 minutes)"
+    mkdir -p "${NHSYS}"
 
-    # Try busybox tar first, fall back to system tar
     local TAR_CMD="${BUSYBOX} tar"
-    command -v tar &>/dev/null && TAR_CMD="tar"
 
-    if unzip -qo "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" 2>/dev/null && ${TAR_CMD} -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+    # Extract rootfs tarball to TMPDIR
+    if ! unzip -qo "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" 2>/dev/null; then
+        echo "- Failed to install Kali rootfs. Skipping..."
+        return 0
+    fi
+
+    # Check if tarball contains kali-${ARCH} folder
+    local has_kali_folder=false
+    if ${TAR_CMD} -tf "${TMPDIR}/${rootfs_file}" 2>/dev/null | grep -qE "^kali-${ARCH}/|^kali-armhf/|^kali-arm64/"; then
+        has_kali_folder=true
+    fi
+
+    local extract_to
+    if [ "$has_kali_folder" = "true" ]; then
+        extract_to="${NHSYS}"
+    else
+        mkdir -p "${NHSYS}/kali-${ARCH}"
+        extract_to="${NHSYS}/kali-${ARCH}"
+    fi
+
+    if ${TAR_CMD} -xf "${TMPDIR}/${rootfs_file}" -C "${extract_to}" 2>/dev/null; then
         ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
         echo "- Kali rootfs installed successfully"
     else
@@ -234,7 +251,7 @@ install_nh_apps(){
     for apk in "${TMPDIR}/APKs"/*.apk; do
         [ ! -f "$apk" ] && continue
         echo "- Installing $(basename "$apk")..."
-        if ! pm install -r "$apk"; then
+        if ! pm install -r "$apk" &>/dev/null; then
             echo "  Failed to install $(basename "$apk")"
         fi
     done
@@ -250,6 +267,9 @@ install_nh_apps(){
     done
 
     return 0
+
+    echo -e "\n- Note: You may need to grant root permissions to NetHunter apps manually after reboot.\n"
+
 }
 
 final_touches(){
@@ -278,8 +298,8 @@ if [ -d "${MODPATH}/system/etc/init.d" ]; then
     echo "- Setting up userinit.d scripts..."
     rm -rf /data/local/userinit.d 2>/dev/null || true
     mkdir -p "/data/local/userinit.d"
-    [ -f "/data/local/userinit.sh" ] || echo "#!/system/bin/sh" > "/data/local/userinit.sh"
-    chmod 0755 "/data/local/userinit.sh" 2>/dev/null || true
+    [ -f "/data/local/userinit.d/userinit.sh" ] || echo "#!/system/bin/sh" > "/data/local/userinit.d/userinit.sh"
+    chmod 0755 "/data/local/userinit.d/userinit.sh" 2>/dev/null || true
 fi
 
 # symlink kali scripts
