@@ -1,0 +1,45 @@
+#! /system/bin/sh
+
+# Copyright (c) 2025 ravindu644
+# KernelSU Module Installer Script
+
+# Core functions
+export TMPDIR=/dev/tmp
+export SCRIPT_DIR="$(readlink -f $(dirname "$0"))"
+mkdir -p "${TMPDIR}"
+
+# logging functions
+log() { echo "[+] $1"; }
+error() { echo "[-] error: $1" && exit 1; }
+
+# debug
+[ -z "$ZIPFILE" ] && error "ZIPFILE is not set"
+[ -z "$MODPATH" ] && error "MODDIR is not set"
+
+# immediately extract the core files if exists
+for file in system.prop module.prop service.sh post-fs-data.sh; do
+    unzip -p "$ZIPFILE" "$file" &>/dev/null && unzip -oq "$ZIPFILE" "$file" -d "$MODPATH" || error "Failed to extract $file"
+done
+
+# crucial check to see if module.prop exists
+[ ! -f "$MODPATH/module.prop" ] && error "module.prop not found.Cannot continue..!"
+
+# fetch info from the module.prop
+load_module_prop(){
+    while IFS='=' read -r key value; do
+        [ -z "$key" ] && continue
+        [ "${key#\#}" != "$key" ] && continue
+        value=$(echo "$value" | tr -d '><$')
+        export "$key=$value"
+    done < "$MODPATH/module.prop"
+} && load_module_prop
+
+# print some info about the module
+print_module_info(){
+  echo -e "\n-  By: $author"
+  echo -e "-  Version: $version\n"
+}
+
+set_permissions(){
+  :
+}
