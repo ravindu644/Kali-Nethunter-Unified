@@ -56,17 +56,19 @@ install_core(){
 }
 
 check_data_space(){
-    local required_gb=10
-    local free_kb=$(${BUSYBOX} df /data | ${BUSYBOX} tail -n1 | ${BUSYBOX} awk '{print $4}')
-    local free_gb=$((free_kb / 1024 / 1024))
+    local required_gb=10 free_gb avail_blocks block_size free_kb
 
-    if [ "$free_gb" -lt "$required_gb" ]; then
-        echo "- Insufficient space on /data. Required: ${required_gb}GB, Available: ${free_gb}GB. Aborting..."
-        exit 1
+    if command -v stat >/dev/null 2>&1; then
+        avail_blocks=$(stat -f -c '%a' /data 2>/dev/null)
+        block_size=$(stat -f -c '%S' /data 2>/dev/null)
+        [ -n "$avail_blocks" ] && [ -n "$block_size" ] && free_gb=$((avail_blocks * block_size / 1024 / 1024 / 1024))
     fi
 
-    echo "- /data partition has ${free_gb}GB free space"
-    return 0
+    [ -z "$free_gb" ] && free_kb=$(${BUSYBOX} df /data 2>/dev/null | ${BUSYBOX} tail -n1 | ${BUSYBOX} awk '{print $4}') && [ -n "$free_kb" ] && [ "$free_kb" -gt 0 ] 2>/dev/null && free_gb=$((free_kb / 1024 / 1024))
+
+    [ -z "$free_gb" ] && echo "- Warning: Unable to determine free space on /data. Skipping space check..." && return 0
+    [ "$free_gb" -lt "$required_gb" ] && echo "- Insufficient space on /data. Required: ${required_gb}GB, Available: ${free_gb}GB. Aborting..." && exit 1
+    echo "- /data partition has ${free_gb}GB free space" && return 0
 }
 
 extract_rootfs(){
