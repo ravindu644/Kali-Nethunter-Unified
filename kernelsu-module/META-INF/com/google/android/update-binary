@@ -5,7 +5,7 @@
 
 # Core functions
 export TMPDIR=/dev/tmp
-export SCRIPT_DIR="$(readlink -f $(dirname "$0"))"
+export SCRIPT_DIR="$(readlink -f "$(dirname "$0")")"
 mkdir -p "${TMPDIR}"
 
 # logging functions
@@ -14,7 +14,8 @@ error() { echo "[-] error: $1" && exit 1; }
 
 # debug
 [ -z "$ZIPFILE" ] && error "ZIPFILE is not set"
-[ -z "$MODPATH" ] && error "MODDIR is not set"
+[ -z "$MODPATH" ] && error "MODPATH is not set"
+[ -z "$TMPDIR" ] && error "TMPDIR is not set"
 
 # immediately extract the core files if exists
 for file in common/system.prop module.prop common/service.sh common/post-fs-data.sh; do
@@ -42,5 +43,5 @@ print_module_info(){
 }
 
 set_permissions(){
-    :
+    set_nh_permissions
 }

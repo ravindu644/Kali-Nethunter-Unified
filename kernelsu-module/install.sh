@@ -4,9 +4,9 @@
 # KernelSU Module Installer Script
 
 # source our functions
-unzip -o "$ZIPFILE" 'META-INF/*' -d $TMPDIR >&2
-. "$TMPDIR/META-INF/com/google/android/util-functions.sh"
+unzip -o "$ZIPFILE" 'META-INF/*' -d "$TMPDIR" >&2
 . "$TMPDIR/META-INF/com/google/android/update-binary"
+. "$TMPDIR/META-INF/com/google/android/util-functions.sh"
 
 print_modname(){
 echo ""

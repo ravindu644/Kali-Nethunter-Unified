@@ -2,6 +2,11 @@
 
 NHSYS=/data/local/nhsystem
 
+# debug
+[ -z "$ZIPFILE" ] && error "ZIPFILE is not set"
+[ -z "$MODPATH" ] && error "MODPATH is not set"
+[ -z "$TMPDIR" ] && error "TMPDIR is not set"
+
 detect_arch(){
     local arch=$(getprop ro.product.cpu.abi)
     case $arch in
@@ -25,7 +30,7 @@ install_busybox(){
         echo "- Busybox is already installed"
         export BUSYBOX="$(which busybox)"
 
-        [ -z "${BUSYBOX}" ] && error "Busybox is installed but \$BUSYBOX variable is empty. Something went wrong..." && exit 1
+        [ -z "${BUSYBOX}" ] && error "Busybox is installed but \$BUSYBOX variable is empty. Something went wrong..."
 
         return 0
     fi
@@ -92,7 +97,11 @@ extract_rootfs(){
 
     echo " - Extracting Kali rootfs (This may take up to 25 minutes)"
 
-    if unzip -oq "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" && ${BUSYBOX} tar -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+    # Try busybox tar first, fall back to system tar
+    local TAR_CMD="${BUSYBOX} tar"
+    command -v tar &>/dev/null && TAR_CMD="tar"
+
+    if unzip -oq "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" && ${TAR_CMD} -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
         ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
         echo "- Kali rootfs installed successfully"
     else
@@ -137,6 +146,7 @@ install_nh_apps(){
     pm uninstall com.offsec.nethunter.store &>/dev/null || true
 
     for apk in "${TMPDIR}/APKs"/*.apk; do
+        [ ! -f "$apk" ] && continue
         echo "- Installing $(basename "$apk")..."
         if ! pm install -r "$apk"; then
             echo "  Failed to install $(basename "$apk")"
@@ -150,7 +160,7 @@ install_nh_apps(){
             READ_EXTERNAL_STORAGE \
             WRITE_EXTERNAL_STORAGE \
             WRITE_SECURE_SETTINGS; do
-    pm grant -g com.offsec.nethunter android.permission.$x &>/dev/null || true
+    pm grant com.offsec.nethunter android.permission.$x &>/dev/null || true
     done
 
     return 0
