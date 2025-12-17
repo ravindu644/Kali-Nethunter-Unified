@@ -273,6 +273,15 @@ final_touches(){
   touch /data/adb/modules/nano-ndk/remove
 }
 
+# Setup userinit.d (NetHunter-specific)
+if [ -d "${MODPATH}/system/etc/init.d" ]; then
+    echo "- Setting up userinit.d scripts..."
+    rm -rf /data/local/userinit.d 2>/dev/null || true
+    mkdir -p "/data/local/userinit.d"
+    [ -f "/data/local/userinit.sh" ] || echo "#!/system/bin/sh" > "/data/local/userinit.sh"
+    chmod 0755 "/data/local/userinit.sh" 2>/dev/null || true
+fi
+
 # symlink kali scripts
 mkdir -p "${MODPATH}/system/bin"
 for link in bootkali bootkali_init bootkali_login bootkali_bash killkali; do
