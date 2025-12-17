@@ -170,8 +170,8 @@ apply_nh_wallpaper(){
     # Resize wallpaper to match screen resolution
     echo "- Resizing wallpaper to ${width}x${height}..."
     if ! ${MAGICK} convert "${TMPDIR}/wallpaper/wallpaper.png" -resize "${width}x${height}^" -gravity center -extent "${width}x${height}" "${TMPDIR}/wallpaper/resized.png" 2>/dev/null; then
-        echo "- Failed to resize wallpaper. Using original..."
-        cp "${TMPDIR}/wallpaper/wallpaper.png" "${TMPDIR}/wallpaper/resized.png"
+        echo "- Failed to resize wallpaper. Skipping..."
+        return 0
     fi
 
     # Apply wallpaper
