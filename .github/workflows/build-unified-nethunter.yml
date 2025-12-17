@@ -53,7 +53,7 @@ jobs:
           ./magisk-2-ksu.sh "${DOWNLOAD_LINK}"
 
           # Find the generated unified zip (script outputs *-unified.zip in repo root)
-          OUT_ZIP="$(ls *.zip-unified.zip | head -n1)"
+          OUT_ZIP="$(ls *-unified.zip 2>/dev/null | head -n1)"
           if [ -z "${OUT_ZIP}" ]; then
             echo "[ERROR] No unified zip produced by converter script"
             exit 1
