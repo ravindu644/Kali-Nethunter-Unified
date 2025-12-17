@@ -73,7 +73,7 @@ extract_rootfs(){
 
     echo " - Extracting Kali rootfs (This may take up to 25 minutes)"
 
-    if unzip -oq "$ZIPFILE" "${rootfs_file}" -d "$TMPDIR" && ${BUSYBOX} tar -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
+    if unzip -oq "${ZIPFILE}" "${rootfs_file}" -d "${TMPDIR}" && ${BUSYBOX} tar -xJf "${TMPDIR}/${rootfs_file}" -C "${NHSYS}/kali-${ARCH}" ; then
         ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
         echo "- Kali rootfs installed successfully"
     else
@@ -84,7 +84,7 @@ extract_rootfs(){
 
 apply_nh_wallpaper(){
     echo "- Applying NetHunter wallpaper..."
-    unzip -oq "$ZIPFILE" 'wallpaper/wallpaper.png' -d "$TMPDIR" >&2
+    unzip -oq "${ZIPFILE}" 'wallpaper/wallpaper.png' -d "${TMPDIR}" >&2
 
     [ ! -f "${TMPDIR}/wallpaper/wallpaper.png" ] && echo "- Nethunter Wallpaper not found. Skipping..." && return 0
 
