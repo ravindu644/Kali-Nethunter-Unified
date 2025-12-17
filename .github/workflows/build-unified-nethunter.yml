@@ -61,14 +61,32 @@ jobs:
 
           NEW_ZIP="nethunter-${{ matrix.edition }}-unified.zip"
           mv "${OUT_ZIP}" "${NEW_ZIP}"
-          echo "ZIP_NAME=${NEW_ZIP}" >> "${GITHUB_ENV}"
-          echo "[INFO] Final artifact name: ${NEW_ZIP}"
+
+          # Check file size and split if larger than 1.8GB
+          FILE_SIZE=$(stat -f%z "${NEW_ZIP}" 2>/dev/null || stat -c%s "${NEW_ZIP}" 2>/dev/null || echo "0")
+          MAX_SIZE=$((1800000000))  # 1.8GB in bytes
+
+          if [ "${FILE_SIZE}" -gt "${MAX_SIZE}" ]; then
+            echo "[INFO] File size (${FILE_SIZE} bytes) exceeds 1.8GB, splitting into parts..."
+            SPLIT_BASE="nethunter-${{ matrix.edition }}-unified-split.zip"
+            zip -s 1800M "${SPLIT_BASE}" "${NEW_ZIP}" && rm "${NEW_ZIP}"
+            echo "ZIP_SPLIT=true" >> "${GITHUB_ENV}"
+            echo "ZIP_PATTERN=nethunter-${{ matrix.edition }}-unified-split.z*" >> "${GITHUB_ENV}"
+            echo "[INFO] Split zip parts created: ${SPLIT_BASE} and ${SPLIT_BASE%.zip}.z*"
+          else
+            echo "ZIP_SPLIT=false" >> "${GITHUB_ENV}"
+            echo "ZIP_NAME=${NEW_ZIP}" >> "${GITHUB_ENV}"
+            echo "[INFO] File size (${FILE_SIZE} bytes) is within limits, no splitting needed"
+          fi
 
       - name: Upload artifact (${{ matrix.edition }})
         uses: actions/upload-artifact@v4
         with:
           name: nethunter-${{ matrix.edition }}-unified
-          path: ${{ env.ZIP_NAME }}
+          path: |
+            nethunter-${{ matrix.edition }}-unified-split.zip
+            nethunter-${{ matrix.edition }}-unified-split.z*
+          if-no-files-found: error
 
   release:
     name: Create GitHub Release
@@ -103,7 +121,8 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/**/*.zip"
+          artifacts: "artifacts/**/*.z*"
+          allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TAG_NAME }}
           name: "Unified NetHunter Modules ${{ env.TAG_NAME }}"
@@ -113,5 +132,7 @@ jobs:
             Includes:
             - Minimal generic build
             - Full generic build
+
+            **Note:** Large files (>1.8GB) are split into multiple parts. Download all `*-split.zip` and `*-split.z*` files and extract them using 7zip.
 
             Date: ${{ env.DATE_STR }}
