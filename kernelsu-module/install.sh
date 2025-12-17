@@ -28,4 +28,5 @@ print_module_info
 on_install(){
     log "Installing module..."
     install_busybox
+    install_core
 }

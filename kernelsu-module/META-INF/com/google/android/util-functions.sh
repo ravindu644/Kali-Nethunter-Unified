@@ -34,3 +34,8 @@ install_busybox(){
         echo "- busybox installed successfully"
     return 0
 }
+
+install_core(){
+    echo "- Installing core files..."
+    unzip -o "$ZIPFILE" 'system/*' -d "${MODPATH}" >&2
+}
