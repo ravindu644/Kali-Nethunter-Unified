@@ -1,0 +1,117 @@
+name: Build and Release Unified NetHunter Modules
+
+on:
+  workflow_dispatch:
+    inputs:
+      minimal_url:
+        description: "Download URL for Kali NetHunter generic *minimal* zip"
+        required: true
+        type: string
+      full_url:
+        description: "Download URL for Kali NetHunter generic *full* zip"
+        required: true
+        type: string
+      tag_name:
+        description: "Optional release tag (default: nethunter-<date>)"
+        required: false
+        type: string
+
+jobs:
+  build:
+    name: Build unified modules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [minimal, full]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Make converter script executable
+        run: chmod +x magisk-2-ksu.sh
+
+      - name: Prepare unified NetHunter module (${{ matrix.edition }})
+        shell: bash
+        run: |
+          set -e
+
+          if [ "${{ matrix.edition }}" = "minimal" ]; then
+            DOWNLOAD_LINK="${{ github.event.inputs.minimal_url }}"
+          else
+            DOWNLOAD_LINK="${{ github.event.inputs.full_url }}"
+          fi
+
+          echo "[INFO] Using download link for ${{ matrix.edition }}: ${DOWNLOAD_LINK}"
+
+          ./magisk-2-ksu.sh "${DOWNLOAD_LINK}"
+
+          # Find the generated unified zip (script outputs *-unified.zip in repo root)
+          OUT_ZIP="$(ls *.zip-unified.zip | head -n1)"
+          if [ -z "${OUT_ZIP}" ]; then
+            echo "[ERROR] No unified zip produced by converter script"
+            exit 1
+          fi
+
+          NEW_ZIP="nethunter-${{ matrix.edition }}-unified.zip"
+          mv "${OUT_ZIP}" "${NEW_ZIP}"
+          echo "ZIP_NAME=${NEW_ZIP}" >> "${GITHUB_ENV}"
+          echo "[INFO] Final artifact name: ${NEW_ZIP}"
+
+      - name: Upload artifact (${{ matrix.edition }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: nethunter-${{ matrix.edition }}-unified
+          path: ${{ env.ZIP_NAME }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Prepare release metadata
+        shell: bash
+        run: |
+          DATE_STR="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          RAW_TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "${RAW_TAG}" ]; then
+            TAG_NAME="nethunter-$(date -u +"%Y%m%d-%H%M%S")"
+          else
+            TAG_NAME="${RAW_TAG}"
+          fi
+
+          echo "DATE_STR=${DATE_STR}" >> "${GITHUB_ENV}"
+          echo "TAG_NAME=${TAG_NAME}" >> "${GITHUB_ENV}"
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "artifacts/**/*.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.TAG_NAME }}
+          name: "Unified NetHunter Modules ${{ env.TAG_NAME }}"
+          body: |
+            Automated release of unified Kali NetHunter modules for APatch/KernelSU/Magisk.
+
+            Includes:
+            - Minimal generic build
+            - Full generic build
+
+            Date: ${{ env.DATE_STR }}
