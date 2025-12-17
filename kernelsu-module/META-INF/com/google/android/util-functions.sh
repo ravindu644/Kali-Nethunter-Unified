@@ -24,17 +24,19 @@ detect_arch(){
 install_busybox(){
 
     echo "- Installing busybox..."
+    unzip -qo "$ZIPFILE" 'busybox/*' -d "${TMPDIR}" 2>/dev/null
+    export BUSYBOX="${TMPDIR}/busybox/${ARCH}/busybox"
+
+    if [ -f "${BUSYBOX}" ]; then
+        chmod +x "${BUSYBOX}"
+    else
+        error "Busybox extracted but not found. Cannot continue..!"
+    fi
 
     if command -v busybox &> /dev/null; then
         echo "- Busybox is already installed"
-        export BUSYBOX="$(which busybox)"
-
-        [ -z "${BUSYBOX}" ] && error "Busybox is installed but \$BUSYBOX variable is empty. Something went wrong..."
-
         return 0
     fi
-
-    unzip -qo "$ZIPFILE" 'busybox/*' -d "${TMPDIR}" 2>/dev/null
 
     [ ! -d "${TMPDIR}/busybox" ] && error "Failed to extract busybox. Cannot continue..!"
 
@@ -95,7 +97,6 @@ extract_rootfs(){
     fi
 
     echo " - Extracting Kali rootfs (This may take up to 25 minutes)"
-    mkdir -p "${NHSYS}"
 
     local TAR_CMD="${BUSYBOX} tar"
 
@@ -118,6 +119,8 @@ extract_rootfs(){
         mkdir -p "${NHSYS}/kali-${ARCH}"
         extract_to="${NHSYS}/kali-${ARCH}"
     fi
+
+    mkdir -p "${extract_to}"
 
     if ${TAR_CMD} -xf "${TMPDIR}/${rootfs_file}" -C "${extract_to}" 2>/dev/null; then
         ln -sf "${NHSYS}/kali-${ARCH}" "${NHSYS}/kalifs" || error "Failed to create symlink to ${NHSYS}/kalifs"
@@ -251,9 +254,7 @@ install_nh_apps(){
     for apk in "${TMPDIR}/APKs"/*.apk; do
         [ ! -f "$apk" ] && continue
         echo "- Installing $(basename "$apk")..."
-        if ! pm install -r "$apk" &>/dev/null; then
-            echo "  Failed to install $(basename "$apk")"
-        fi
+        pm install -r "$apk" &>/dev/null || echo "  Failed to install $(basename "$apk")"
     done
 
     echo "- Granting permissions to NetHunter apps..."
