@@ -21,6 +21,16 @@ print_usage() {
     exit 1
 }
 
+check_requirements(){
+    local deps=(curl unzip rsync)
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            error "$dep could not be found"
+        fi
+    done
+    log "All dependencies found"
+} && check_requirements
+
 # download the file
 download_nh(){
     export FILENAME=$(basename "$DOWNLOAD_LINK")
