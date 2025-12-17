@@ -29,6 +29,6 @@ on_install(){
     log "Installing module..."
     install_busybox
     install_core
-    extract_rootfs
+    check_data_space && extract_rootfs
     apply_nh_wallpaper || echo "- Failed to apply NetHunter wallpaper..."
 }

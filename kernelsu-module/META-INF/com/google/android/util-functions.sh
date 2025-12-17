@@ -23,6 +23,10 @@ install_busybox(){
 
     if command -v busybox &> /dev/null; then
         echo "- Busybox is already installed"
+        export BUSYBOX="$(which busybox)"
+
+        [ -z "${BUSYBOX}" ] && error "Busybox is installed but \$BUSYBOX variable is empty. Something went wrong..." && exit 1
+
         return 0
     fi
 
@@ -34,15 +38,30 @@ install_busybox(){
     cp "${TMPDIR}/busybox/${ARCH}/busybox" "${MODPATH}/system/bin/busybox" && \
         chmod +x "${MODPATH}/system/bin/busybox" && \
         echo "- busybox installed successfully"
+
+    # export the installed busybox path
+    export BUSYBOX="${MODPATH}/system/bin/busybox"
+
     return 0
 }
-
-# export the installed busybox path
-export BUSYBOX="${MODPATH}/system/bin/busybox"
 
 install_core(){
     echo "- Installing core files..."
     unzip -o "$ZIPFILE" 'system/*' -d "${MODPATH}" >&2
+}
+
+check_data_space(){
+    local required_gb=10
+    local free_kb=$(${BUSYBOX} df /data | ${BUSYBOX} tail -n1 | ${BUSYBOX} awk '{print $4}')
+    local free_gb=$((free_kb / 1024 / 1024))
+
+    if [ "$free_gb" -lt "$required_gb" ]; then
+        echo "- Insufficient space on /data. Required: ${required_gb}GB, Available: ${free_gb}GB. Aborting..."
+        exit 1
+    fi
+
+    echo "- /data partition has ${free_gb}GB free space"
+    return 0
 }
 
 extract_rootfs(){
