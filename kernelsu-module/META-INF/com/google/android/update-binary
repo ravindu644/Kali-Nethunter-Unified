@@ -37,7 +37,8 @@ load_module_prop(){
 # print some info about the module
 print_module_info(){
   echo -e "\n-  By: $author"
-  echo -e "-  Version: $version\n"
+  echo -e "-  Version: $version"
+  echo -e "-  Architecture: $ARCH\n"
 }
 
 set_permissions(){

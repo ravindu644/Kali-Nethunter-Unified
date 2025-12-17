@@ -5,6 +5,7 @@
 
 # source our functions
 unzip -o "$ZIPFILE" 'META-INF/*' -d $TMPDIR >&2
+. "$TMPDIR/META-INF/com/google/android/util-functions.sh"
 . "$TMPDIR/META-INF/com/google/android/update-binary"
 
 print_modname(){
@@ -26,4 +27,5 @@ print_module_info
 
 on_install(){
     log "Installing module..."
+    install_busybox
 }
