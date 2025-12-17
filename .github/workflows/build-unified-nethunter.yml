@@ -84,9 +84,10 @@ jobs:
         with:
           name: nethunter-${{ matrix.edition }}-unified
           path: |
+            nethunter-${{ matrix.edition }}-unified.zip
             nethunter-${{ matrix.edition }}-unified-split.zip
             nethunter-${{ matrix.edition }}-unified-split.z*
-          if-no-files-found: error
+          if-no-files-found: ignore
 
   release:
     name: Create GitHub Release
@@ -121,7 +122,7 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/**/*.z*"
+          artifacts: "artifacts/**/*unified*.zip*"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TAG_NAME }}
