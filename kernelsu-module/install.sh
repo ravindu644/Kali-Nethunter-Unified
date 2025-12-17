@@ -31,6 +31,7 @@ on_install(){
     install_busybox
     install_core
     check_data_space && extract_rootfs
+    install_wireless_firmwares
     apply_nh_wallpaper || echo "- Failed to apply NetHunter wallpaper..."
     install_nh_apps
     final_touches

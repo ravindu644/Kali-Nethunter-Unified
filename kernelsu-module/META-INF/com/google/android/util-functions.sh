@@ -110,6 +110,19 @@ extract_rootfs(){
     fi
 }
 
+install_wireless_firmwares(){
+    # Check if vendor/firmware folder exists in the zip
+    if unzip -l "$ZIPFILE" 2>/dev/null | grep -q "vendor/firmware/"; then
+        echo "- Installing wireless firmware..."
+        mkdir -p "${MODPATH}/system"
+        unzip -oq "$ZIPFILE" "vendor/firmware/*" -d "${MODPATH}/system" >&2
+        return 0
+    fi
+
+    # Nothing to do
+    return 0
+}
+
 apply_nh_wallpaper(){
     echo "- Applying NetHunter wallpaper..."
 
@@ -277,5 +290,6 @@ set_nh_permissions(){
     chown -R root:root "${MODPATH}/system" 2>/dev/null
     chmod -R 0755 "${MODPATH}/system" 2>/dev/null
     chcon -R u:object_r:system_file:s0 "${MODPATH}/system" 2>/dev/null
+    chcon -R u:object_r:vendor_firmware_file:s0 "${MODPATH}/system/vendor/firmware" 2>/dev/null
     return 0
 }
