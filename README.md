@@ -2,6 +2,13 @@
 
 A modern, lightweight, and unified installer for Kali NetHunter that works seamlessly across APatch, KernelSU, and Magisk.
 
+<details>
+<summary>Click to see installation screenshot</summary>
+
+<img src="screenshot.jpg" alt="Installation Screenshot" width="400">
+
+</details>
+
 ## Why This Exists
 
 The official Kali NetHunter installer is bloated with legacy code supporting outdated installation methods like TWRP/Recovery and does not work with KernelSU/APatch. This project was created to:
