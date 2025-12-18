@@ -3,6 +3,11 @@
 # Copyright (c) 2025 ravindu644
 # KernelSU Module Installer Script
 
+# debug
+[ -z "$ZIPFILE" ] && echo "ZIPFILE is not set" && exit 1
+[ -z "$MODPATH" ] && echo "MODPATH is not set" && exit 1
+[ -z "$TMPDIR" ] && echo "TMPDIR is not set" && exit 1
+
 # source our functions
 unzip -qo "$ZIPFILE" 'META-INF/*' -d "$TMPDIR" 2>/dev/null
 . "$TMPDIR/META-INF/com/google/android/update-binary"
