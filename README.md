@@ -72,6 +72,11 @@ Download the appropriate zip file from the [GitHub Releases](../../releases) pag
 4. Choose the unified NetHunter zip
 5. Wait for installation to complete
 
+> [!NOTE]
+>
+> **You may need to disable Google Play Protect** because it falsely detects NetHunter as malware and prevents the `pm` utility from installing the apps during installation.
+>
+
 ### Step 3: Reboot
 
 Reboot your device to activate the module.
