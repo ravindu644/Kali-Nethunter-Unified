@@ -164,3 +164,4 @@ Tested on:
 
 - Official Kali NetHunter Team for the original implementation
 - [Brutal Busybox](https://github.com/feravolt/Brutal_busybox)
+- [Android-ImageMagick7](https://github.com/MolotovCherry/Android-ImageMagick7)
