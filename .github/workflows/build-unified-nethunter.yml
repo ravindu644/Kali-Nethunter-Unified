@@ -134,10 +134,6 @@ jobs:
             - Minimal generic build
             - Full generic build
 
-            **Note:** Large files (>1.8GB) are split into multiple parts. Download all `.zip` and `.z*` files with the same base name and join them using:
-            ```bash
-            zip -F *-unified-split.zip --out *-unified.zip
-            unzip *-unified.zip
-            ```
+            **Note:** Large files (>1.8GB) are split into multiple parts. Download all `.zip` and `.z*` files with the same base name, put them inside the same folder, and unzip them using 7zip, WinRAR, or any other zip merger.
 
             Date: ${{ env.DATE_STR }}
